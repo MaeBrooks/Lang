@@ -1,0 +1,38 @@
+module Utils.File exposing ( getFileContents, GetFileContentsError(..) )
+
+import Bytes exposing ( Bytes )
+import FileSystem
+import Task exposing ( Task )
+import Utils.Bytes
+
+
+type GetFileContentsError
+    = AccessError FileSystem.AccessError
+    | UnknownError FileSystem.UnknownFileSystemError
+    | UnableToConvertContentsToString
+
+
+maybeStringToString : Maybe String -> Task GetFileContentsError String
+maybeStringToString string =
+    case string of
+        Just str ->
+            Task.succeed str
+
+        Nothing ->
+            Task.fail UnableToConvertContentsToString
+
+
+getFileContents : FileSystem.Permission -> String -> Task GetFileContentsError String
+getFileContents permission path =
+    FileSystem.openForRead permission path
+        |> Task.mapError (\e -> AccessError e)
+        |> Task.andThen (\fh -> 
+          FileSystem.read fh
+            |> Task.mapError (\e -> UnknownError e)
+            |> Task.andThen Utils.Bytes.toStringTask
+            |> Task.andThen maybeStringToString
+          )
+
+name : FileSystem.ReadableFileHandle Never -> String
+name _ =
+    "TODO: FileSystem.fileName? fh"

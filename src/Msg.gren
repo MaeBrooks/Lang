@@ -1,0 +1,16 @@
+module Msg exposing ( Msg(..), BuildTarget(..) )
+
+
+
+type Msg
+    = Exit
+    | Help
+    | ParseArguments
+    | Build
+        { file : String
+        , to : BuildTarget
+        }
+
+
+type BuildTarget -- None | Folder | ??
+    = BuildToFile String

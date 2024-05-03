@@ -1,0 +1,100 @@
+module Lexer exposing ( lex )
+
+import Lexer.Token as Token exposing ( Token )
+import Utils.Array
+import Utils.ResultedMaybe
+
+
+lex : String -> Result String (Array Token)
+lex input =
+    let
+        get_tokens chars tokens =
+            case Array.popFirst chars of
+                Nothing ->
+                    Ok tokens
+
+                Just { first = ' ', rest } ->
+                    get_tokens rest tokens
+
+                Just { first = '\n', rest } ->
+                    get_tokens rest tokens
+
+                Just { first = '+', rest } ->
+                    get_tokens rest (Array.pushLast Token.Plus tokens)
+
+                Just { first } ->
+                    case
+                        Utils.ResultedMaybe.untilSomething
+                            [ tryToGetNumber
+                            ]
+                            chars
+                            |> Utils.ResultedMaybe.withDefault ("ERROR unhandled character: \'" ++ String.fromChar first ++ "\'")
+                    of
+                        Err e ->
+                            Err e
+
+                        Ok { token, rest } ->
+                            get_tokens rest (Array.pushLast token tokens)
+    in
+    get_tokens (String.toArray input) []
+
+
+tryToGetNumber :
+    Array Char
+    -> Result
+        String
+        (Maybe
+            { token : Token
+            , rest : Array Char
+            }
+        )
+tryToGetNumber chars =
+    let
+        -- TODO: floating points
+        { trues, falses } =
+            Utils.Array.partitionUntilNot Char.isDigit chars
+
+        fromSingleDigit str =
+            String.toInt str
+                |> Maybe.map
+                        (\num ->
+                            Ok
+                                <| Just
+                                <| Token.Integer num
+                        )
+                |> Maybe.withDefault (Err ("Internal Error: Failed to convert \'" ++ str ++ "\' to an integer"))
+
+        fromMultiDigit str =
+            String.toInt str
+                |> Maybe.map
+                        (\num ->
+                            Ok
+                                <| Just
+                                <| Token.Integer num
+                        )
+                |> Maybe.withDefault (Err ("Internal Error: Failed to convert \'" ++ str ++ "\' to an integer"))
+
+        result =
+            case trues of
+                [] ->
+                    Ok Nothing
+
+                [ digit ] ->
+                    String.fromChar digit
+                        |> fromSingleDigit
+
+                digits ->
+                    String.fromArray digits
+                        |> fromMultiDigit
+    in
+    result
+        |> Result.map
+                (\value ->
+                    value
+                        |> Maybe.map
+                                (\token ->
+                                    { token = token
+                                    , rest = falses
+                                    }
+                                )
+                )

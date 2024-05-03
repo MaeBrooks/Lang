@@ -1,0 +1,17 @@
+module Model exposing ( Model, new )
+
+import FileSystem
+import Node
+
+
+type alias Model =
+    { env : Node.Environment
+    , filePermission : FileSystem.Permission
+    }
+
+
+new: Node.Environment -> FileSystem.Permission -> Model
+new env filePermission =
+    { env = env
+    , filePermission = filePermission
+    }

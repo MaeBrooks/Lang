@@ -1,0 +1,13 @@
+module Parser.Value exposing ( Value(..), toString )
+
+
+
+type alias Value =
+    Int
+
+
+toString : Value -> String
+toString value =
+    case value of
+        Int ->
+            String.from value

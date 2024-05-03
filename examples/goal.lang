@@ -1,0 +1,11 @@
+// ts / lua inspired
+// let = const
+// let mut = let
+// implicit return
+// ? everything is an expression ?
+// for now, we export typescript
+
+func add (a: number, b: number) number:
+  a + b
+
+export let foo = add (1, 2)

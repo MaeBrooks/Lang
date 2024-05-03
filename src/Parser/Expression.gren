@@ -1,0 +1,41 @@
+module Parser.Expression exposing ( Expression, toString )
+
+import Parser.Operator as Operator exposing ( Operator )
+import Parser.Value as Value exposing ( Value )
+
+
+type alias TypeThingThatIDontKnowHowToName =
+    number
+
+
+type alias StaticValue =
+    number
+
+
+type Expression
+    = Binary
+        { left : Expression Value
+        , operator : Operator
+        , right : Expression Value
+        }
+    | Unary Value {- 
+  | StaticValue StaticValue
+  | Type { name: String, represents: TypeThingThatIDontKnowHowToName }
+  | FunctionArgument { name: String, type_: Type }
+  | FunctionDeclaration {
+      name: String,
+      arguments: Array FunctionArgument
+      returns: Type
+      body: Expression
+    }
+  -}
+
+
+toString : Expression a -> String
+toString expr =
+    case expr of
+        Binary { left, operator, right } ->
+            toString left ++ " " ++ Operator.toString operator ++ " " ++ toString right
+
+        Unary value ->
+            Value.toString value

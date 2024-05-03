@@ -1,0 +1,96 @@
+module Main exposing ( main )
+
+import Basics
+import FileSystem
+import Init
+import Model exposing ( Model )
+import Msg exposing ( Msg )
+import Node
+import Task
+import Lexer
+import Utils.Bytes as Bytes
+import Utils.File as File
+
+
+main : Node.Program Model Msg
+main =
+    Node.defineProgram
+        { init = init
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        }
+
+
+update :
+    Msg
+    -> Model
+    -> { model : Model
+       , command : Cmd Msg
+       }
+update msg model =
+    case msg of
+        Msg.Exit ->
+            { model = model
+            , command = Cmd.none
+            }
+
+        Msg.Help ->
+            Debug.todo "Help!"
+
+        Msg.ParseArguments ->
+            case model.env.args of
+                [ _, _, "build", path ] ->
+                    { model = model
+                    , command =
+                        do
+                            <| Msg.Build
+                                    { file = path
+                                    , to = Msg.BuildToFile "out"
+                                    }
+                    }
+
+                _ ->
+                    { model = model
+                    , command = do Msg.Help
+                    }
+
+        Msg.Build { file = filePath, to } ->
+            { model = model
+            , command =
+                File.getFileContents model.filePermission filePath
+                    |> Task.map Lexer.lex
+                    |> Task.map Parser.parse
+                    -- |> Task.map Analyzer.analyze
+                    -- |> Task.map IR.reduce
+                    -- |> Task.map CodeGen.to CodeGenTarget.TypeScript
+                    |> Task.map (\_ -> Msg.Exit 0)
+                    |> Task.onError (\e ->
+                      -- TODO: Msg.Exit Maybe String
+                      --       ... Just e -> Debug.todo e
+                      Debug.todo <| Debug.toString <| e
+                      Task.succeed Msg.Exit 1
+                    )
+                    |> Task.perform identity
+            }
+
+
+init :
+    Node.Environment
+    -> Init.Task
+        { model : Model
+        , command : Cmd Msg
+        }
+init env =
+    Init.await FileSystem.initialize
+        <| (\permission ->
+                Node.startProgram
+                    { model = Model.new env permission
+                    , command = do Msg.ParseArguments
+                    }
+            )
+
+
+do : Msg -> Cmd Msg
+do msg =
+    Task.succeed msg
+        |> Task.perform identity

@@ -1,0 +1,34 @@
+module Utils.ResultedMaybe exposing (..)
+
+
+
+type alias ResultedMaybe err value =
+    Result err (Maybe value)
+
+
+withDefault : err -> ResultedMaybe err value -> Result err value
+withDefault err result =
+    result
+        |> Result.andThen (\value -> Result.fromMaybe err value)
+
+
+untilSomething : Array (Array input -> ResultedMaybe err output) -> Array input -> ResultedMaybe err output
+untilSomething callbacks input =
+    case Array.popFirst callbacks of
+        Nothing ->
+            Ok Nothing
+
+        Just { first = callback, rest = restOfTheCallbacks } ->
+            case callback input of
+                Err e ->
+                    Err e
+
+                Ok option ->
+                    case option of
+                        Nothing ->
+                            untilSomething restOfTheCallbacks input
+
+                        Just output ->
+                            Ok
+                                <| Just
+                                <| output

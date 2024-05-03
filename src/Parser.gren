@@ -1,0 +1,115 @@
+module Parser exposing ( parse )
+
+import Lexer.Token as Token exposing ( Token )
+import Parser.Expression as Expression exposing ( Expression )
+import Parser.Operator as Operator exposing ( Operator )
+
+
+
+-- TODO: Err String -> Actual error type
+
+
+parse : Array Token -> Result String Expression
+parse tokens =
+    case Array.popFirst tokens of
+        Nothing ->
+            Err "Well how am I supposed to parse nothing?"
+
+        Just { first = token, rest } ->
+            case token of
+                Token.Plus ->
+                    Err "Unexpected \'+\'"
+
+                Token.Integer int ->
+                    parseInteger
+                        int
+                        tokens
+                        Result.map
+                        (\{ expression, rest } ->
+                            case rest of
+                                [] ->
+                                    expression
+
+                                _ ->
+                                    Debug.todo "Recursive tree building"
+                        )
+
+
+parse_ :
+    Array Token
+    -> Result
+        String
+        { expression : Expression
+        , rest : Array Token
+        }
+parse_ tokens =
+    let
+        result =
+            case Array.popFirst tokens of
+                Nothing ->
+                    Err "Unexpected end of tokens"
+
+                Just { first, rest } ->
+                    case token of
+                        Token.Integer int ->
+                            parseInteger int rest
+
+                        _ ->
+                            Err ("Unexpected \'" ++ Token.toString token ++ "\'")
+    in
+    result
+        -- TODO: parse -> Result Err (Array Expression)
+        |> Result.map (\{ expression, rest } -> expression)
+
+
+parseInteger :
+    Int
+    -> Array Token
+    -> Result
+        String
+        { expression : Expression
+        , rest : Array Token
+        }
+parseInteger int tokens =
+    case Array.popFirst tokens of
+        Nothing ->
+            Ok
+                { expression = Expression.Unary int
+                , rest = []
+                }
+
+        Just { first, rest } ->
+            case first of
+                Token.Plus ->
+                    parseBinaryExpression (Expression.Unary int) Operator.Addition rest
+
+                token ->
+                    let
+                        tokenAsString =
+                            Token.toString token
+                    in
+                    Err ("unexpected token: \'" ++ tokenAsString ++ "\' in expression: \'" ++ String.fromInt ++ " " ++ tokenAsString ++ "\'")
+
+
+parseBinaryExpression :
+    Expression a
+    -> Operator
+    -> Array Token
+    -> Result
+        String
+        { expression : Expression
+        , rest : Array token
+        }
+parseBinaryExpression left operator tokens =
+    parse_ tokens
+        |> Result.map
+                (\{ expression = right, rest = leftOverTokens } ->
+                    { expression =
+                        Expression.Binary
+                            { left = left
+                            , operator = operator
+                            , right = right
+                            }
+                    , rest = leftOverTokens
+                    }
+                )

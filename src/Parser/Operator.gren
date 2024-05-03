@@ -1,0 +1,13 @@
+module Parser.Operator exposing ( Operator(..), toString )
+
+
+
+type Operator
+    = Addition
+
+
+toString : Operator -> String
+toString op =
+    case op of
+        Addition ->
+            "+"

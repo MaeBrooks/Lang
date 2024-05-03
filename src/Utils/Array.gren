@@ -1,0 +1,21 @@
+module Utils.Array exposing (..)
+
+
+
+partitionUntilNot :
+    (a -> Bool)
+    -> Array a
+    -> { trues : Array a
+       , falses : Array a
+       }
+partitionUntilNot check array =
+  let
+    partitionUntilNot_ check_ array_ output =
+      case Array.popFirst array_ of
+        Nothing -> { trues = output, falses = array_ }
+        Just { first = value, rest } ->
+          case check_ value of
+            False -> { trues = output, falses = array_ }
+            True -> partitionUntilNot_ (check_) rest (Array.pushLast value output)
+  in
+  partitionUntilNot_ check array []

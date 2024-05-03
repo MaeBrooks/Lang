@@ -1,0 +1,24 @@
+module Utils.Bytes exposing ( toString, toStringTask )
+
+import Bytes exposing ( Bytes )
+import Bytes.Decode as D
+import Task exposing (Task)
+
+
+type BytesDecoder a
+    = BytesDecoder
+        (Bytes
+         -> Int
+         -> { offset : Int
+            , value : a
+            }
+        )
+
+
+toString : Bytes -> Maybe String
+toString bytes =
+    D.decode (D.string (Bytes.width bytes)) bytes
+
+toStringTask : Bytes -> Task x (Maybe String)
+toStringTask bytes =
+  Task.succeed (toString bytes)
